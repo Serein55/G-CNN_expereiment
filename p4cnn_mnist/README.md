@@ -13,6 +13,9 @@ p4cnn_mnist/
 ├── __init__.py          # 包初始化
 ├── dataset.py           # Rotated MNIST 数据集加载
 ├── p4cnn.py            # P4CNN 模型定义
+├── C8cnn.py            # P8CNN 模型定义
+├── baseline_cnn.py     # Baseline CNN 模型定义
+├── main.py             # 统一实验脚本（推荐）
 ├── train.py            # 训练脚本
 ├── run_experiment.py    # 一键运行脚本
 └── README.md           # 本文件
@@ -40,25 +43,37 @@ pip install torch torchvision numpy scipy
 
 ## 快速开始
 
-### 方法1：一键运行（推荐）
+### 方法1：统一脚本（推荐）
 ```bash
 # 进入实验目录
 cd p4cnn_mnist
 
-# 运行完整实验（200个epoch）
-python run_experiment.py
+# 运行 P4CNN 实验（200个epoch）
+python main.py --model p4cnn --epochs 200
 
-# 或者运行快速测试（10个epoch）
-python run_experiment.py --epochs 10
+# 运行 P8CNN 实验
+python main.py --model p8cnn --epochs 200
+
+# 运行 Baseline CNN 实验
+python main.py --model baseline --epochs 100
 
 # 跳过测试，直接开始训练
-python run_experiment.py --skip_tests
+python main.py --model p4cnn --skip_tests --epochs 50
 
 # 自定义参数
-python run_experiment.py --epochs 200 --batch_size 128 --lr 0.0005
+python main.py --model p4cnn --epochs 200 --batch_size 128 --lr 0.0005
 ```
 
-### 方法2：分步运行
+### 方法2：使用原有脚本
+```bash
+# 使用 run_experiment.py
+python run_experiment.py --epochs 10
+
+# 使用 train.py
+python train.py --model p4cnn --epochs 200
+```
+
+### 方法3：分步运行
 
 #### 步骤1：测试数据集加载
 ```python
@@ -91,19 +106,27 @@ python train.py --epochs 200 --batch_size 64 --lr 0.001
 
 ## 参数说明
 
+### 模型参数
+- `--model`: 模型选择（p4cnn / p8cnn / baseline，默认：p4cnn）
+- `--n_channels`: 通道数（p4cnn默认10, p8cnn默认7, baseline默认10）
+
 ### 训练参数
 - `--epochs`: 训练轮数（默认：200）
 - `--batch_size`: 批次大小（默认：64）
 - `--lr`: 学习率（默认：0.001）
 - `--weight_decay`: 权重衰减（默认：1e-4）
-- `--n_channels`: P4通道数（默认：10，相当于普通CNN 20通道）
 - `--save_dir`: 模型保存目录（默认：./checkpoints）
 
 ### 数据集参数
 - `--data_dir`: 数据存储目录（默认：./data）
 - `--num_workers`: 数据加载线程数（默认：4）
 
+### 其他参数
+- `--skip_tests`: 跳过数据集和模型测试
+
 ## 模型架构
+
+### P4CNN (P4 等变网络)
 P4CNN是一个7层的等变卷积神经网络：
 
 1. **提升层（Lifting Layer）**：
@@ -129,10 +152,52 @@ P4CNN是一个7层的等变卷积神经网络：
 5. **分类器**：
    - 全连接层，输出10个类别
 
+### P8CNN (P8 等变网络)
+P8CNN是一个6层的等变卷积神经网络，支持45°旋转等变性：
+
+1. **浅层特征提取（Layer 1-2）**：
+   - 卷积核大小：5×5（应对45°离散网格混叠）
+   - 作用：提取基础特征
+
+2. **深层特征提取（Layer 3-5）**：
+   - 卷积核大小：3×3（节省算力）
+   - 每层包含：卷积 → 批归一化 → ReLU激活
+
+3. **跨通道混合（Layer 6）**：
+   - 卷积核大小：1×1
+   - 作用：通道与群混合
+
+4. **自适应池化**：
+   - 空间维度：PointwiseAdaptiveAvgPool2D（支持任意输入尺寸）
+   - 旋转维度：GroupPooling（获得旋转不变性）
+
+5. **分类器**：
+   - 全连接层，输出10个类别
+
 ## 预期结果
 - 训练时间：约30-60分钟（取决于GPU）
 - 最终测试错误率：约2.28%（与论文一致）
 - 验证集用于模型选择，测试集用于最终评估
+
+## Checkpoint 目录结构
+每个实验的结果保存在 `checkpoints/{model}_n{n_channels}/` 子目录下：
+
+```
+checkpoints/
+├── p4cnn_n10/
+│   ├── best_model.pth           # 最佳模型权重
+│   └── training_history.json    # 训练历史记录
+├── p8cnn_n10/
+│   ├── best_model.pth
+│   └── training_history.json
+└── baseline_n10/
+    ├── best_model.pth
+    └── training_history.json
+```
+
+- `{model}`: 模型名称（p4cnn / p8cnn / baseline）
+- `{n_channels}`: 通道数（默认10）
+- 不同参数的实验会自动创建对应的子目录，避免结果覆盖
 
 ## 故障排除
 
