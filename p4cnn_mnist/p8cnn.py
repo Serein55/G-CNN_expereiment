@@ -35,7 +35,7 @@ class P8CNN(enn.EquivariantModule):
         # Layer 1: 3x3 conv, trivial -> regular (提升层)
         out_type_1 = enn.FieldType(self.gspace, [self.gspace.regular_repr] * n_channels)
         self.conv1 = enn.R2Conv(
-            self.in_type, out_type_1, kernel_size=3, padding=1,
+            self.in_type, out_type_1, kernel_size=5, padding=1,
             bias=False, sigma=None, frequencies_cutoff=lambda r: 3*r
         )
         self.bn1 = enn.InnerBatchNorm(out_type_1)
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     model = P8CNN(num_classes=10, n_channels=7).to(device)
     
     print("=== 严格控制变量的 P8CNN ===")
-    count_parameters(model)
+    total, trainable, equiv = count_parameters(model)
     
     # 形状测试
     x = torch.randn(2, 1, 28, 28).to(device)

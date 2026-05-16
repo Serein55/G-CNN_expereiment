@@ -3,7 +3,6 @@
 本实验实现了基于旋转等变神经网络的Rotated MNIST分类任务。
 
 ## 目标
-- 论文目标错误率：约2.28%
 - 使用P4等变卷积神经网络（G-CNN）
 - 对称群：p4群（4个离散旋转：0°, 90°, 180°, 270°）
 
@@ -13,7 +12,7 @@ p4cnn_mnist/
 ├── __init__.py          # 包初始化
 ├── dataset.py           # Rotated MNIST 数据集加载
 ├── p4cnn.py            # P4CNN 模型定义
-├── C8cnn.py            # P8CNN 模型定义
+├── p8cnn.py            # P8CNN 模型定义
 ├── baseline_cnn.py     # Baseline CNN 模型定义
 ├── main.py             # 统一实验脚本（推荐）
 ├── train.py            # 训练脚本
@@ -108,7 +107,7 @@ python train.py --epochs 200 --batch_size 64 --lr 0.001
 
 ### 模型参数
 - `--model`: 模型选择（p4cnn / p8cnn / baseline，默认：p4cnn）
-- `--n_channels`: 通道数（p4cnn默认10, p8cnn默认7, baseline默认10）
+- `--n_channels`: 通道数（默认：10）
 
 ### 训练参数
 - `--epochs`: 训练轮数（默认：200）
@@ -178,26 +177,6 @@ P8CNN是一个6层的等变卷积神经网络，支持45°旋转等变性：
 - 训练时间：约30-60分钟（取决于GPU）
 - 最终测试错误率：约2.28%（与论文一致）
 - 验证集用于模型选择，测试集用于最终评估
-
-## Checkpoint 目录结构
-每个实验的结果保存在 `checkpoints/{model}_n{n_channels}/` 子目录下：
-
-```
-checkpoints/
-├── p4cnn_n10/
-│   ├── best_model.pth           # 最佳模型权重
-│   └── training_history.json    # 训练历史记录
-├── p8cnn_n10/
-│   ├── best_model.pth
-│   └── training_history.json
-└── baseline_n10/
-    ├── best_model.pth
-    └── training_history.json
-```
-
-- `{model}`: 模型名称（p4cnn / p8cnn / baseline）
-- `{n_channels}`: 通道数（默认10）
-- 不同参数的实验会自动创建对应的子目录，避免结果覆盖
 
 ## 故障排除
 
